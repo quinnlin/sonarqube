@@ -22,6 +22,7 @@
 import React from 'react';
 import { translate } from '../../../../helpers/l10n';
 
+/*::
 type Props = {|
   name: string,
   onClear?: () => void,
@@ -29,15 +30,16 @@ type Props = {|
   open: boolean,
   values?: number
 |};
+*/
 
 export default class FacetHeader extends React.PureComponent {
-  props: Props;
+  /*:: props: Props; */
 
   static defaultProps = {
     open: true
   };
 
-  handleClearClick = (event: Event & { currentTarget: HTMLElement }) => {
+  handleClearClick = (event /*: Event & { currentTarget: HTMLElement } */) => {
     event.preventDefault();
     event.currentTarget.blur();
     if (this.props.onClear) {
@@ -45,7 +47,7 @@ export default class FacetHeader extends React.PureComponent {
     }
   };
 
-  handleClick = (event: Event & { currentTarget: HTMLElement }) => {
+  handleClick = (event /*: Event & { currentTarget: HTMLElement } */) => {
     event.preventDefault();
     event.currentTarget.blur();
     if (this.props.onClick) {
@@ -81,7 +83,7 @@ export default class FacetHeader extends React.PureComponent {
   }
 
   render() {
-    const showClearButton: boolean = !!this.props.values && this.props.onClear != null;
+    const showClearButton /*: boolean */ = !!this.props.values && this.props.onClear != null;
 
     return (
       <div>

@@ -25,9 +25,10 @@ import FacetHeader from './components/FacetHeader';
 import FacetItem from './components/FacetItem';
 import FacetItemsList from './components/FacetItemsList';
 import LanguageFacetFooter from './LanguageFacetFooter';
-import type { ReferencedLanguage } from '../utils';
+/*:: import type { ReferencedLanguage } from '../utils'; */
 import { translate } from '../../../helpers/l10n';
 
+/*::
 type Props = {|
   facetMode: string,
   onChange: (changes: { [string]: Array<string> }) => void,
@@ -37,9 +38,10 @@ type Props = {|
   referencedLanguages: { [string]: ReferencedLanguage },
   languages: Array<string>
 |};
+*/
 
 export default class LanguageFacet extends React.PureComponent {
-  props: Props;
+  /*:: props: Props; */
 
   static defaultProps = {
     open: true
@@ -47,7 +49,7 @@ export default class LanguageFacet extends React.PureComponent {
 
   property = 'languages';
 
-  handleItemClick = (itemValue: string) => {
+  handleItemClick = (itemValue /*: string */) => {
     const { languages } = this.props;
     const newValue = sortBy(
       languages.includes(itemValue) ? without(languages, itemValue) : [...languages, itemValue]
@@ -63,17 +65,17 @@ export default class LanguageFacet extends React.PureComponent {
     this.props.onChange({ [this.property]: [] });
   };
 
-  getLanguageName(language: string): string {
+  getLanguageName(language /*: string */) /*: string */ {
     const { referencedLanguages } = this.props;
     return referencedLanguages[language] ? referencedLanguages[language].name : language;
   }
 
-  getStat(language: string): ?number {
+  getStat(language /*: string */) /*: ?number */ {
     const { stats } = this.props;
     return stats ? stats[language] : null;
   }
 
-  handleSelect = (language: string) => {
+  handleSelect = (language /*: string */) => {
     const { languages } = this.props;
     this.props.onChange({ [this.property]: uniq([...languages, language]) });
   };

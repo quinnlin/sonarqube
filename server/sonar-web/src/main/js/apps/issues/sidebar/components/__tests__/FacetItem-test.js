@@ -23,7 +23,7 @@ import { shallow } from 'enzyme';
 import { click } from '../../../../../helpers/testUtils';
 import FacetItem from '../FacetItem';
 
-const renderFacetItem = (props: {}) =>
+const renderFacetItem = (props /*: {} */) =>
   shallow(
     <FacetItem
       active={false}

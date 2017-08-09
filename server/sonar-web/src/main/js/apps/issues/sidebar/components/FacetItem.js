@@ -22,6 +22,7 @@ import React from 'react';
 import classNames from 'classnames';
 import { formatMeasure } from '../../../../helpers/measures';
 
+/*::
 type Props = {|
   active: boolean,
   disabled: boolean,
@@ -32,16 +33,17 @@ type Props = {|
   stat: ?number,
   value: string
 |};
+*/
 
 export default class FacetItem extends React.PureComponent {
-  props: Props;
+  /*:: props: Props; */
 
   static defaultProps = {
     disabled: false,
     halfWidth: false
   };
 
-  handleClick = (event: Event & { currentTarget: HTMLElement }) => {
+  handleClick = (event /*: Event & { currentTarget: HTMLElement } */) => {
     event.preventDefault();
     const value = event.currentTarget.dataset.value;
     this.props.onClick(value);

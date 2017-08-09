@@ -27,6 +27,7 @@ import FacetItemsList from './components/FacetItemsList';
 import SeverityHelper from '../../../components/shared/SeverityHelper';
 import { translate } from '../../../helpers/l10n';
 
+/*::
 type Props = {|
   facetMode: string,
   onChange: (changes: { [string]: Array<string> }) => void,
@@ -35,9 +36,10 @@ type Props = {|
   severities: Array<string>,
   stats?: { [string]: number }
 |};
+*/
 
 export default class SeverityFacet extends React.PureComponent {
-  props: Props;
+  /*:: props: Props; */
 
   static defaultProps = {
     open: true
@@ -45,7 +47,7 @@ export default class SeverityFacet extends React.PureComponent {
 
   property = 'severities';
 
-  handleItemClick = (itemValue: string) => {
+  handleItemClick = (itemValue /*: string */) => {
     const { severities } = this.props;
     const newValue = orderBy(
       severities.includes(itemValue) ? without(severities, itemValue) : [...severities, itemValue]
@@ -61,12 +63,12 @@ export default class SeverityFacet extends React.PureComponent {
     this.props.onChange({ [this.property]: [] });
   };
 
-  getStat(severity: string): ?number {
+  getStat(severity /*: string */) /*: ?number */ {
     const { stats } = this.props;
     return stats ? stats[severity] : null;
   }
 
-  renderItem = (severity: string) => {
+  renderItem = (severity /*: string */) => {
     const active = this.props.severities.includes(severity);
     const stat = this.getStat(severity);
 

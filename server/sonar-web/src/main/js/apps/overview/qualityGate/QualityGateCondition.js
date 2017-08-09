@@ -27,10 +27,10 @@ import { getPeriodValue, isDiffMetric, formatMeasure } from '../../../helpers/me
 import { translate } from '../../../helpers/l10n';
 import { getComponentIssuesUrl } from '../../../helpers/urls';
 import IssueTypeIcon from '../../../components/ui/IssueTypeIcon';
-import type { Component } from '../types';
+/*:: import type { Component } from '../types'; */
 
 export default class QualityGateCondition extends React.PureComponent {
-  props: {
+  /*:: props: {
     component: Component,
     condition: {
       level: string,
@@ -48,8 +48,9 @@ export default class QualityGateCondition extends React.PureComponent {
       warning: string
     }
   };
+*/
 
-  getDecimalsNumber(threshold: number, value: number) {
+  getDecimalsNumber(threshold /*: number */, value /*: number */) {
     const delta = Math.abs(threshold - value);
     if (delta < 0.1 && delta > 0) {
       //$FlowFixMe The matching result can't null because of the previous check
@@ -57,8 +58,8 @@ export default class QualityGateCondition extends React.PureComponent {
     }
   }
 
-  getIssuesUrl(sinceLeakPeriod: boolean, customQuery: {}) {
-    const query: Object = {
+  getIssuesUrl(sinceLeakPeriod /*: boolean */, customQuery /*: {} */) {
+    const query /*: Object */ = {
       resolved: 'false',
       ...customQuery
     };
@@ -68,11 +69,11 @@ export default class QualityGateCondition extends React.PureComponent {
     return getComponentIssuesUrl(this.props.component.key, query);
   }
 
-  getUrlForCodeSmells(sinceLeakPeriod: boolean) {
+  getUrlForCodeSmells(sinceLeakPeriod /*: boolean */) {
     return this.getIssuesUrl(sinceLeakPeriod, { types: 'CODE_SMELL' });
   }
 
-  getUrlForBugsOrVulnerabilities(type: string, sinceLeakPeriod: boolean) {
+  getUrlForBugsOrVulnerabilities(type /*: string */, sinceLeakPeriod /*: boolean */) {
     const RATING_TO_SEVERITIES_MAPPING = [
       'BLOCKER,CRITICAL,MAJOR,MINOR',
       'BLOCKER,CRITICAL,MAJOR',
@@ -89,13 +90,13 @@ export default class QualityGateCondition extends React.PureComponent {
     });
   }
 
-  getUrlForType(type: string, sinceLeakPeriod: boolean) {
+  getUrlForType(type /*: string */, sinceLeakPeriod /*: boolean */) {
     return type === 'CODE_SMELL'
       ? this.getUrlForCodeSmells(sinceLeakPeriod)
       : this.getUrlForBugsOrVulnerabilities(type, sinceLeakPeriod);
   }
 
-  wrapWithLink(children: React.Element<*>) {
+  wrapWithLink(children /*: React.Element<*> */) {
     const { component, condition } = this.props;
 
     const className = classNames(

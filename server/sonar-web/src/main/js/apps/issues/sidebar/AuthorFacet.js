@@ -26,6 +26,7 @@ import FacetItem from './components/FacetItem';
 import FacetItemsList from './components/FacetItemsList';
 import { translate } from '../../../helpers/l10n';
 
+/*::
 type Props = {|
   facetMode: string,
   onChange: (changes: {}) => void,
@@ -34,9 +35,10 @@ type Props = {|
   stats?: { [string]: number },
   authors: Array<string>
 |};
+*/
 
 export default class AuthorFacet extends React.PureComponent {
-  props: Props;
+  /*:: props: Props; */
 
   static defaultProps = {
     open: true
@@ -44,7 +46,7 @@ export default class AuthorFacet extends React.PureComponent {
 
   property = 'authors';
 
-  handleItemClick = (itemValue: string) => {
+  handleItemClick = (itemValue /*: string */) => {
     const { authors } = this.props;
     const newValue = sortBy(
       authors.includes(itemValue) ? without(authors, itemValue) : [...authors, itemValue]
@@ -60,7 +62,7 @@ export default class AuthorFacet extends React.PureComponent {
     this.props.onChange({ [this.property]: [] });
   };
 
-  getStat(author: string): ?number {
+  getStat(author /*: string */) /*: ?number */ {
     const { stats } = this.props;
     return stats ? stats[author] : null;
   }

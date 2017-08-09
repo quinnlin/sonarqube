@@ -20,12 +20,14 @@
 // @flow
 import React from 'react';
 
+/*::
 type Props = {|
   children?: React.Element<*>,
   property: string
 |};
+*/
 
-export default function FacetBox(props: Props) {
+export default function FacetBox(props /*: Props */) {
   return (
     <div className="search-navigator-facet-box" data-property={props.property}>
       {props.children}
