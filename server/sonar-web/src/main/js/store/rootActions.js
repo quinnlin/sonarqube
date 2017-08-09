@@ -39,11 +39,13 @@ export const fetchLanguages = () => dispatch => {
   return getLanguages().then(languages => dispatch(receiveLanguages(languages)), onFail(dispatch));
 };
 
-export const fetchOrganizations = (organizations?: Array<string>) => dispatch =>
-  getOrganizations(organizations).then(
-    r => dispatch(receiveOrganizations(r.organizations)),
-    onFail(dispatch)
-  );
+export function fetchOrganizations(organizations /*: ?Array<string> */) {
+  return dispatch =>
+    getOrganizations(organizations).then(
+      r => dispatch(receiveOrganizations(r.organizations)),
+      onFail(dispatch)
+    );
+}
 
 const addQualifier = project => ({
   ...project,
