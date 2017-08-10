@@ -61,6 +61,11 @@ public class AnalysisEsResilienceTest {
     User orgAdministrator = tester.users().generateAdministrator(organization);
     assertThat(searchComponents(projectKey, organization)).isEmpty();
 
+    //FIXME magically let indexation fail
+    executeAnalysis(projectKey, organization, orgAdministrator);
+    assertThat(searchComponents(projectKey, organization)).isEmpty();
+
+    //FIXME magically let indexation work fine
     executeAnalysis(projectKey, organization, orgAdministrator);
     assertThat(searchComponents(projectKey, organization)).isNotEmpty();
   }
