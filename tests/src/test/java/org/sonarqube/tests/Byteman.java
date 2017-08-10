@@ -32,9 +32,10 @@ public class Byteman {
 
   public static OrchestratorBuilder enableScript(OrchestratorBuilder builder, String filename) {
     String jar = findBytemanJar();
+    String bytemanArg = format("-javaagent:%s=script:%s,boot:%s", jar, findBytemanScript(filename), jar);
     builder
-      .setServerProperty("sonar.web.javaAdditionalOpts",
-        format("-javaagent:%s=script:%s,boot:%s", jar, findBytemanScript(filename), jar))
+      .setServerProperty("sonar.web.javaAdditionalOpts", bytemanArg)
+      .setServerProperty("sonar.ce.javaAdditionalOpts", bytemanArg)
       .setServerProperty("sonar.search.recovery.delayInMs", "1000")
       .setServerProperty("sonar.search.recovery.minAgeInMs", "3000");
     return builder;
