@@ -76,6 +76,7 @@ public class ProjectMeasuresPageTest {
       .measureHasValue("code_smells", 0)
       .measureHasLeak("new_code_smells", 0);
     page
+      .openFacet("Maintainability")
       .openMeasureContent("code_smells")
       .shouldHaveFile("src/main/xoo/sample")
       .shouldHaveHeaderValue("0");
@@ -84,7 +85,8 @@ public class ProjectMeasuresPageTest {
   @Test
   public void should_drilldown_on_list_view() {
     MeasuresPage page = tester.openBrowser().openProjectMeasures(projectKey);
-    MeasureContent content = page.openMeasureContent("ncloc");
+    MeasureContent content = page
+      .openFacet("Size").openMeasureContent("ncloc");
     content
       .drillDown("src/main/xoo/sample/Sample.xoo")
       .shouldHaveHeaderValue("13")
@@ -99,7 +101,8 @@ public class ProjectMeasuresPageTest {
   @Test
   public void should_drilldown_on_tree_view() {
     MeasuresPage page = tester.openBrowser().openProjectMeasures(projectKey);
-    MeasureContent content = page.openMeasureContent("ncloc");
+    MeasureContent content = page
+      .openFacet("Size").openMeasureContent("ncloc");
     page.switchView("tree");
     content
       .shouldHaveFile("src/main/xoo/sample");
