@@ -23,19 +23,19 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.BuildResult;
 import com.sonar.orchestrator.build.SonarScanner;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.sonarqube.tests.Byteman;
 import org.sonarqube.tests.Tester;
 import org.sonarqube.ws.Organizations.Organization;
-import org.sonarqube.ws.WsComponents;
 import org.sonarqube.ws.WsUsers.CreateWsResponse.User;
-import org.sonarqube.ws.client.component.SearchWsRequest;
+import org.sonarqube.ws.client.component.SuggestionsWsRequest;
 import util.ItUtils;
 
-import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static util.ItUtils.projectDir;
@@ -71,15 +71,17 @@ public class AnalysisEsResilienceTest {
   }
 
   private List<String> searchComponents(String projectKey, Organization organization) {
-    SearchWsRequest query = new SearchWsRequest()
-      .setOrganization(organization.getKey())
-      .setQualifiers(singletonList("TRK"))
-      .setQuery(projectKey);
-    return tester.wsClient().components().search(query)
-      .getComponentsList()
-      .stream()
-      .map(WsComponents.Component::getKey)
-      .collect(Collectors.toList());
+    SuggestionsWsRequest query = SuggestionsWsRequest.builder()
+      .setS(projectKey)
+      .build();
+    Map<String, Object> response = ItUtils.jsonToMap(
+      tester.wsClient().components().suggestions(query).content()
+    );
+    List results = (List) response.get("results");
+    Map trkResult = (Map) results.stream().filter(result -> "TRK".equals(((Map) result).get("q"))).findAny().get();
+    List items = (List) trkResult.get("items");
+    Stream<String> x = items.stream().map(item -> (String) ((Map) item).get("key"));
+    return x.collect(Collectors.toList());
   }
 
   private String executeAnalysis(String projectKey, Organization organization, User orgAdministrator) {
