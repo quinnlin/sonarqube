@@ -22,12 +22,11 @@ package org.sonarqube.tests.analysis;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.BuildResult;
 import com.sonar.orchestrator.build.SonarScanner;
-import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.jboss.byteman.agent.submit.Submit;
+import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,19 +39,19 @@ import util.ItUtils;
 
 import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarqube.tests.Byteman.Process.CE;
 import static util.ItUtils.projectDir;
 
 public class AnalysisEsResilienceTest {
 
   @ClassRule
   public static final Orchestrator orchestrator;
-  public static int bytemanCePort;
+  private static final Byteman byteman;
 
   static {
-    Byteman.OrchestratorWithByteman orchestratorWithByteman = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/making_ce_indexation_failing.btm");
-    bytemanCePort = orchestratorWithByteman.getBytemanCePort();
-    orchestrator = orchestratorWithByteman.getOrchestratorBuilder()
-//    orchestrator = Orchestrator.builderEnv()
+    byteman = new Byteman(Orchestrator.builderEnv(), CE);
+    orchestrator = byteman
+      .getOrchestratorBuilder()
       .addPlugin(ItUtils.xooPlugin())
       .build();
   }
@@ -60,21 +59,38 @@ public class AnalysisEsResilienceTest {
   @Rule
   public Tester tester = new Tester(orchestrator);
 
+  @After
+  public void after() throws Exception {
+    byteman.deactivateAllRules();
+  }
+
   @Test
   public void activation_and_deactivation_of_rule_is_resilient_to_indexing_errors() throws Exception {
     String projectKey = randomAlphanumeric(20);
     String fileKey = projectKey + ":src/main/xoo/sample/Sample.xoo";
+    String file2Key = projectKey + ":src/main/xoo/sample/Sample2.xoo";
+    String file3Key = projectKey + ":src/main/xoo/sample/Sample3.xoo";
 
     Organization organization = tester.organizations().generate();
     User orgAdministrator = tester.users().generateAdministrator(organization);
     assertThat(searchFile(projectKey, organization)).isEmpty();
 
-    executeAnalysis(projectKey, organization, orgAdministrator);
-    assertThat(searchFile(fileKey, organization)).isEmpty();
-
-    deactivateByteman();
-    executeAnalysis(projectKey, organization, orgAdministrator);
+    executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v1");
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
+    assertThat(searchFile(file2Key, organization)).isEmpty();
+    assertThat(searchFile(file3Key, organization)).isEmpty();
+
+    byteman.activateScript("resilience/making_ce_indexation_failing.btm");
+    executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v2");
+    assertThat(searchFile(fileKey, organization)).isNotEmpty();
+    assertThat(searchFile(file2Key, organization)).isEmpty();
+    assertThat(searchFile(file3Key, organization)).isEmpty();
+    byteman.deactivateAllRules();
+
+    executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v3");
+    assertThat(searchFile(fileKey, organization)).isNotEmpty();
+    assertThat(searchFile(file2Key, organization)).isEmpty();
+    assertThat(searchFile(file3Key, organization)).isNotEmpty();
   }
 
   private List<String> searchFile(String key, Organization organization) {
@@ -91,8 +107,8 @@ public class AnalysisEsResilienceTest {
     return x.collect(Collectors.toList());
   }
 
-  private String executeAnalysis(String projectKey, Organization organization, User orgAdministrator) {
-    BuildResult buildResult = orchestrator.executeBuild(SonarScanner.create(projectDir("shared/xoo-sample"),
+  private String executeAnalysis(String projectKey, Organization organization, User orgAdministrator, String projectPath) {
+    BuildResult buildResult = orchestrator.executeBuild(SonarScanner.create(projectDir(projectPath),
       "sonar.organization", organization.getKey(),
       "sonar.projectKey", projectKey,
       "sonar.login", orgAdministrator.getLogin(),
@@ -100,8 +116,4 @@ public class AnalysisEsResilienceTest {
     return ItUtils.extractCeTaskId(buildResult);
   }
 
-  private void deactivateByteman() throws Exception {
-    Submit submit = new Submit(InetAddress.getLoopbackAddress().getHostAddress(), bytemanCePort);
-    submit.deleteAllRules();
-  }
 }
