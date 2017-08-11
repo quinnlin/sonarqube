@@ -46,7 +46,7 @@ public class AnalysisEsResilienceTest {
   public static final Orchestrator orchestrator;
 
   static {
-    orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/active_rule_indexer.btm")
+    orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/making_ce_indexation_failing.btm")
       .addPlugin(ItUtils.xooPlugin())
       .build();
   }
