@@ -87,28 +87,44 @@ public class AnalysisEsResilienceTest {
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
     assertThat(searchFile(file2Key, organization)).isEmpty();
     assertThat(searchFile(file3Key, organization)).isEmpty();
-    assertThat(searchFilesWithIssues(projectKey)).containsExactlyInAnyOrder(fileKey);
+    List<Issues.Issue> issues = searchIssues(projectKey);
+    assertThat(issues.stream()
+      .map(Issues.Issue::getComponent)
+      .collect(Collectors.toList())
+    ).containsExactlyInAnyOrder(fileKey);
 
     byteman.activateScript("resilience/making_ce_indexation_failing.btm");
     executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v2");
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
     assertThat(searchFile(file2Key, organization)).isEmpty();// inconsistency: in DB there is also file2Key
     assertThat(searchFile(file3Key, organization)).isEmpty();// inconsistency: in DB there is also file3Key
-    assertThat(searchFilesWithIssues(projectKey)).containsExactlyInAnyOrder(fileKey /* inconsistency: in DB there is also file2Key and file3Key */);
+    issues = searchIssues(projectKey);
+    assertThat(issues.stream()
+      .map(Issues.Issue::getComponent)
+      .collect(Collectors.toList())
+    ).containsExactlyInAnyOrder(fileKey /* inconsistency: in DB there is also file2Key and file3Key */);
     byteman.deactivateAllRules();
 
     executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v3");
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
     assertThat(searchFile(file2Key, organization)).isEmpty();
     assertThat(searchFile(file3Key, organization)).isNotEmpty();
-    assertThat(searchFilesWithIssues(projectKey)).containsExactlyInAnyOrder(fileKey, file2Key, file3Key);
+    issues = searchIssues(projectKey);
+    assertThat(issues.stream()
+      .map(Issues.Issue::getComponent)
+      .collect(Collectors.toList())
+    ).containsExactlyInAnyOrder(fileKey, file2Key, file3Key);
+    assertThat(issues.stream()
+      .filter(i -> "CLOSED".equals(i.getStatus()))
+      .map(Issues.Issue::getComponent)
+      .collect(Collectors.toList())).containsExactlyInAnyOrder(file2Key);
   }
 
-  private List<String> searchFilesWithIssues(String projectKey) {
+  private List<Issues.Issue> searchIssues(String projectKey) {
     SearchWsRequest request = new SearchWsRequest()
       .setProjectKeys(Collections.singletonList(projectKey));
     Issues.SearchWsResponse results = tester.wsClient().issues().search(request);
-    return results.getIssuesList().stream().map(Issues.Issue::getComponent).collect(Collectors.toList());
+    return results.getIssuesList();
   }
 
   private List<String> searchFile(String key, Organization organization) {
