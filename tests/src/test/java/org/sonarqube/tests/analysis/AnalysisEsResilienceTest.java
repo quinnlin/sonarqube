@@ -43,6 +43,7 @@ import org.sonarqube.ws.client.issue.SearchWsRequest;
 import util.ItUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarqube.tests.Byteman.Process.CE;
 import static util.ItUtils.projectDir;
 
@@ -88,10 +89,9 @@ public class AnalysisEsResilienceTest {
     assertThat(searchFile(file2Key, organization)).isEmpty();
     assertThat(searchFile(file3Key, organization)).isEmpty();
     List<Issues.Issue> issues = searchIssues(projectKey);
-    assertThat(issues.stream()
-      .map(Issues.Issue::getComponent)
-      .collect(Collectors.toList())
-    ).containsExactlyInAnyOrder(fileKey);
+    assertThat(issues)
+      .extracting(Issues.Issue::getComponent)
+      .containsExactlyInAnyOrder(fileKey);
 
     byteman.activateScript("resilience/making_ce_indexation_failing.btm");
     executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v2");
@@ -99,10 +99,9 @@ public class AnalysisEsResilienceTest {
     assertThat(searchFile(file2Key, organization)).isEmpty();// inconsistency: in DB there is also file2Key
     assertThat(searchFile(file3Key, organization)).isEmpty();// inconsistency: in DB there is also file3Key
     issues = searchIssues(projectKey);
-    assertThat(issues.stream()
-      .map(Issues.Issue::getComponent)
-      .collect(Collectors.toList())
-    ).containsExactlyInAnyOrder(fileKey /* inconsistency: in DB there is also file2Key and file3Key */);
+    assertThat(issues)
+      .extracting(Issues.Issue::getComponent)
+      .containsExactlyInAnyOrder(fileKey /* inconsistency: in DB there is also file2Key and file3Key */);
     byteman.deactivateAllRules();
 
     executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v3");
@@ -110,14 +109,12 @@ public class AnalysisEsResilienceTest {
     assertThat(searchFile(file2Key, organization)).isEmpty();
     assertThat(searchFile(file3Key, organization)).isNotEmpty();
     issues = searchIssues(projectKey);
-    assertThat(issues.stream()
-      .map(Issues.Issue::getComponent)
-      .collect(Collectors.toList())
-    ).containsExactlyInAnyOrder(fileKey, file2Key, file3Key);
-    assertThat(issues.stream()
-      .filter(i -> "CLOSED".equals(i.getStatus()))
-      .map(Issues.Issue::getComponent)
-      .collect(Collectors.toList())).containsExactlyInAnyOrder(file2Key);
+    assertThat(issues)
+      .extracting(Issues.Issue::getComponent, Issues.Issue::getStatus)
+      .containsExactlyInAnyOrder(
+        tuple(fileKey, "OPEN"),
+        tuple(file2Key, "CLOSED"),
+        tuple(file3Key, "OPEN"));
   }
 
   private List<Issues.Issue> searchIssues(String projectKey) {
