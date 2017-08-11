@@ -42,7 +42,9 @@ public class UserEsResilienceTest {
   public static final Orchestrator orchestrator;
 
   static {
-    orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/user_indexer.btm").build();
+    orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/user_indexer.btm")
+      .getOrchestratorBuilder()
+      .build();
   }
 
   @Rule

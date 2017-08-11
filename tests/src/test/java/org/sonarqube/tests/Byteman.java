@@ -21,6 +21,8 @@
 
 import com.sonar.orchestrator.OrchestratorBuilder;
 import java.io.File;
+import java.net.InetAddress;
+import org.sonar.process.NetworkUtils;
 
 import static java.lang.String.format;
 
@@ -30,15 +32,21 @@ import static java.lang.String.format;
  */
 public class Byteman {
 
-  public static OrchestratorBuilder enableScript(OrchestratorBuilder builder, String filename) {
+  public static OrchestratorWithByteman enableScript(OrchestratorBuilder builder, String filename) {
     String jar = findBytemanJar();
-    String bytemanArg = format("-javaagent:%s=script:%s,boot:%s", jar, findBytemanScript(filename), jar);
+
+    int webPortNumber = NetworkUtils.getNextAvailablePort(InetAddress.getLoopbackAddress());
+    String bytemanWebArg = format("-javaagent:%s=script:%s,boot:%s,port:%d", jar, findBytemanScript(filename), jar, webPortNumber);
+
+    int cePortNumber = NetworkUtils.getNextAvailablePort(InetAddress.getLoopbackAddress());
+    String bytemanCeArg = format("-javaagent:%s=script:%s,boot:%s,port:%d", jar, findBytemanScript(filename), jar, cePortNumber);
+
     builder
-      .setServerProperty("sonar.web.javaAdditionalOpts", bytemanArg)
-      .setServerProperty("sonar.ce.javaAdditionalOpts", bytemanArg)
+      .setServerProperty("sonar.web.javaAdditionalOpts", bytemanWebArg)
+      .setServerProperty("sonar.ce.javaAdditionalOpts", bytemanCeArg)
       .setServerProperty("sonar.search.recovery.delayInMs", "1000")
       .setServerProperty("sonar.search.recovery.minAgeInMs", "3000");
-    return builder;
+    return new OrchestratorWithByteman(builder, webPortNumber, cePortNumber);
   }
 
   private static String findBytemanJar() {
@@ -57,5 +65,29 @@ public class Byteman {
       throw new IllegalStateException("Can't find " + script);
     }
     return script.getAbsolutePath();
+  }
+
+  public static class OrchestratorWithByteman {
+    private final int bytemanWebPort;
+    private final int bytemanCePort;
+    private final OrchestratorBuilder orchestratorBuilder;
+
+    private OrchestratorWithByteman(OrchestratorBuilder orchestratorBuilder, int bytemanWebPort, int bytemanCePort) {
+      this.bytemanWebPort = bytemanWebPort;
+      this.bytemanCePort = bytemanCePort;
+      this.orchestratorBuilder = orchestratorBuilder;
+    }
+
+    public int getBytemanCePort() {
+      return bytemanCePort;
+    }
+
+    public int getBytemanWebPort() {
+      return bytemanWebPort;
+    }
+
+    public OrchestratorBuilder getOrchestratorBuilder() {
+      return orchestratorBuilder;
+    }
   }
 }

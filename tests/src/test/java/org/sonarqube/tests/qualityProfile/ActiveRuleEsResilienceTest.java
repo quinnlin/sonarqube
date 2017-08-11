@@ -44,6 +44,7 @@ public class ActiveRuleEsResilienceTest {
 
   static {
     orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/active_rule_indexer.btm")
+      .getOrchestratorBuilder()
       .addPlugin(ItUtils.xooPlugin())
       .build();
   }

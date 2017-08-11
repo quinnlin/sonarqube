@@ -43,6 +43,7 @@ public class RuleEsResilienceTest {
 
   static {
     orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/rule_indexer.btm")
+      .getOrchestratorBuilder()
       .addPlugin(ItUtils.xooPlugin())
       .build();
   }

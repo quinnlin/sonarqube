@@ -22,10 +22,12 @@ package org.sonarqube.tests.analysis;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.BuildResult;
 import com.sonar.orchestrator.build.SonarScanner;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jboss.byteman.agent.submit.Submit;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,9 +46,12 @@ public class AnalysisEsResilienceTest {
 
   @ClassRule
   public static final Orchestrator orchestrator;
+  public static int bytemanCePort;
 
   static {
-    orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/making_ce_indexation_failing.btm")
+    Byteman.OrchestratorWithByteman orchestratorWithByteman = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/making_ce_indexation_failing.btm");
+    bytemanCePort = orchestratorWithByteman.getBytemanCePort();
+    orchestrator = orchestratorWithByteman.getOrchestratorBuilder()
 //    orchestrator = Orchestrator.builderEnv()
       .addPlugin(ItUtils.xooPlugin())
       .build();
@@ -64,11 +69,10 @@ public class AnalysisEsResilienceTest {
     User orgAdministrator = tester.users().generateAdministrator(organization);
     assertThat(searchFile(projectKey, organization)).isEmpty();
 
-    //FIXME magically let indexation fail
     executeAnalysis(projectKey, organization, orgAdministrator);
     assertThat(searchFile(fileKey, organization)).isEmpty();
 
-    //FIXME magically let indexation work fine
+    deactivateByteman();
     executeAnalysis(projectKey, organization, orgAdministrator);
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
   }
@@ -96,5 +100,8 @@ public class AnalysisEsResilienceTest {
     return ItUtils.extractCeTaskId(buildResult);
   }
 
-
+  private void deactivateByteman() throws Exception {
+    Submit submit = new Submit(InetAddress.getLoopbackAddress().getHostAddress(), bytemanCePort);
+    submit.deleteAllRules();
+  }
 }
