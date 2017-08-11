@@ -22,6 +22,7 @@ package org.sonarqube.tests.analysis;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.BuildResult;
 import com.sonar.orchestrator.build.SonarScanner;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,12 +33,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.sonarqube.tests.Byteman;
 import org.sonarqube.tests.Tester;
+import org.sonarqube.ws.Issues;
 import org.sonarqube.ws.Organizations.Organization;
+import org.sonarqube.ws.QualityProfiles.CreateWsResponse.QualityProfile;
+import org.sonarqube.ws.WsProjects;
 import org.sonarqube.ws.WsUsers.CreateWsResponse.User;
 import org.sonarqube.ws.client.component.SuggestionsWsRequest;
+import org.sonarqube.ws.client.issue.SearchWsRequest;
 import util.ItUtils;
 
-import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarqube.tests.Byteman.Process.CE;
 import static util.ItUtils.projectDir;
@@ -66,31 +70,45 @@ public class AnalysisEsResilienceTest {
 
   @Test
   public void activation_and_deactivation_of_rule_is_resilient_to_indexing_errors() throws Exception {
-    String projectKey = randomAlphanumeric(20);
+    Organization organization = tester.organizations().generate();
+    User orgAdministrator = tester.users().generateAdministrator(organization);
+    WsProjects.CreateWsResponse.Project project = tester.projects().generate(organization);
+    String projectKey = project.getKey();
     String fileKey = projectKey + ":src/main/xoo/sample/Sample.xoo";
     String file2Key = projectKey + ":src/main/xoo/sample/Sample2.xoo";
     String file3Key = projectKey + ":src/main/xoo/sample/Sample3.xoo";
 
-    Organization organization = tester.organizations().generate();
-    User orgAdministrator = tester.users().generateAdministrator(organization);
-    assertThat(searchFile(projectKey, organization)).isEmpty();
+    QualityProfile profile = tester.qProfiles().createXooProfile(organization);
+    tester.qProfiles()
+      .activateRule(profile, "xoo:OneIssuePerFile")
+      .assignQProfileToProject(profile, project);
 
     executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v1");
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
     assertThat(searchFile(file2Key, organization)).isEmpty();
     assertThat(searchFile(file3Key, organization)).isEmpty();
+    assertThat(searchFilesWithIssues(projectKey)).containsExactlyInAnyOrder(fileKey);
 
     byteman.activateScript("resilience/making_ce_indexation_failing.btm");
     executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v2");
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
-    assertThat(searchFile(file2Key, organization)).isEmpty();
-    assertThat(searchFile(file3Key, organization)).isEmpty();
+    assertThat(searchFile(file2Key, organization)).isEmpty();// inconsistency: in DB there is also file2Key
+    assertThat(searchFile(file3Key, organization)).isEmpty();// inconsistency: in DB there is also file3Key
+    assertThat(searchFilesWithIssues(projectKey)).containsExactlyInAnyOrder(fileKey /* inconsistency: in DB there is also file2Key and file3Key */);
     byteman.deactivateAllRules();
 
     executeAnalysis(projectKey, organization, orgAdministrator, "analysis/resilience/resilience-sample-v3");
     assertThat(searchFile(fileKey, organization)).isNotEmpty();
     assertThat(searchFile(file2Key, organization)).isEmpty();
     assertThat(searchFile(file3Key, organization)).isNotEmpty();
+    assertThat(searchFilesWithIssues(projectKey)).containsExactlyInAnyOrder(fileKey, file2Key, file3Key);
+  }
+
+  private List<String> searchFilesWithIssues(String projectKey) {
+    SearchWsRequest request = new SearchWsRequest()
+      .setProjectKeys(Collections.singletonList(projectKey));
+    Issues.SearchWsResponse results = tester.wsClient().issues().search(request);
+    return results.getIssuesList().stream().map(Issues.Issue::getComponent).collect(Collectors.toList());
   }
 
   private List<String> searchFile(String key, Organization organization) {
