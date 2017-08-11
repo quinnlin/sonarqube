@@ -47,6 +47,7 @@ public class AnalysisEsResilienceTest {
 
   static {
     orchestrator = Byteman.enableScript(Orchestrator.builderEnv(), "resilience/making_ce_indexation_failing.btm")
+//    orchestrator = Orchestrator.builderEnv()
       .addPlugin(ItUtils.xooPlugin())
       .build();
   }
@@ -57,28 +58,30 @@ public class AnalysisEsResilienceTest {
   @Test
   public void activation_and_deactivation_of_rule_is_resilient_to_indexing_errors() throws Exception {
     String projectKey = randomAlphanumeric(20);
+    String fileKey = projectKey + ":src/main/xoo/sample/Sample.xoo";
+
     Organization organization = tester.organizations().generate();
     User orgAdministrator = tester.users().generateAdministrator(organization);
-    assertThat(searchComponents(projectKey, organization)).isEmpty();
+    assertThat(searchFile(projectKey, organization)).isEmpty();
 
     //FIXME magically let indexation fail
     executeAnalysis(projectKey, organization, orgAdministrator);
-    assertThat(searchComponents(projectKey, organization)).isEmpty();
+    assertThat(searchFile(fileKey, organization)).isEmpty();
 
     //FIXME magically let indexation work fine
     executeAnalysis(projectKey, organization, orgAdministrator);
-    assertThat(searchComponents(projectKey, organization)).isNotEmpty();
+    assertThat(searchFile(fileKey, organization)).isNotEmpty();
   }
 
-  private List<String> searchComponents(String projectKey, Organization organization) {
+  private List<String> searchFile(String key, Organization organization) {
     SuggestionsWsRequest query = SuggestionsWsRequest.builder()
-      .setS(projectKey)
+      .setS(key)
       .build();
     Map<String, Object> response = ItUtils.jsonToMap(
       tester.wsClient().components().suggestions(query).content()
     );
     List results = (List) response.get("results");
-    Map trkResult = (Map) results.stream().filter(result -> "TRK".equals(((Map) result).get("q"))).findAny().get();
+    Map trkResult = (Map) results.stream().filter(result -> "FIL".equals(((Map) result).get("q"))).findAny().get();
     List items = (List) trkResult.get("items");
     Stream<String> x = items.stream().map(item -> (String) ((Map) item).get("key"));
     return x.collect(Collectors.toList());

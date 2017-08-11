@@ -19,6 +19,7 @@
  */
 package org.sonarqube.ws.client.component;
 
+import java.util.Collections;
 import java.util.List;
 
 public class SuggestionsWsRequest {
@@ -65,7 +66,7 @@ public class SuggestionsWsRequest {
   public static class Builder {
 
     private More more;
-    private List<String> recentlyBrowsed;
+    private List<String> recentlyBrowsed = Collections.emptyList();
     private String s;
 
     private Builder() {
